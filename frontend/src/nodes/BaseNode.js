@@ -1,23 +1,28 @@
-import React, { createElement, useEffect, useState } from "react";
-import { Handle, useReactFlow } from "reactflow";
+import React, { createElement, useEffect, useState, useRef } from "react";
+import { Handle } from "reactflow";
 
 const BaseNode = (props) => {
   const [nodeData, setNodeData] = useState({});
   const [isDragging, setIsDragging] = useState(false);
   const [isClicked, setIsClicked] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
+  const [handles, setHandles] = useState([]);
 
   useEffect(() => {
     if (props.data) {
       setNodeData(props.data.nodeData || {});
-      // console.log("Data received in BaseNode:", props.data);
+      setHandles(props.data.nodeData.handles || []);
     } else {
       console.log("No data received in BaseNode");
     }
   }, [props.data]);
 
   const handleNodeClick = (event) => {
-    if (event.target.tagName === "INPUT" || event.target.tagName === "SELECT") {
+    if (
+      event.target.tagName === "INPUT" ||
+      event.target.tagName === "SELECT" ||
+      event.target.tagName === "TEXTAREA"
+    ) {
       event.stopPropagation();
       return;
     }
@@ -41,6 +46,41 @@ const BaseNode = (props) => {
     setIsInteracting(false);
   };
 
+  const handleTextChange = (e) => {
+    const value = e.target.value;
+    const updatedFields = nodeData.fields.map((field) => {
+      if (field.name === e.target.name) {
+        return { ...field, value };
+      }
+      return field;
+    });
+    setNodeData({ ...nodeData, fields: updatedFields });
+
+    if (nodeData.label === "Text") {
+      updateHandles(value);
+      adjustNodeSize(e.target);
+    }
+  };
+
+  const updateHandles = (text) => {
+    const regex = /{{\s*(\w+)\s*}}/g;
+    const matches = Array.from(text.matchAll(regex)).map((match) => match[1]);
+
+    const newHandles = matches.map((match, index) => ({
+      type: "target",
+      position: "left",
+      id: match,
+      style: { top: `${(100 / (matches.length + 1)) * (index + 1)}%` },
+    }));
+
+    setHandles([...nodeData.handles, ...newHandles]);
+  };
+
+  const adjustNodeSize = (target) => {
+    target.style.height = "auto";
+    target.style.height = `${target.scrollHeight}px`;
+  };
+
   const nodeClasses = `max-w-[350px] min-w-[200px] p-1 shadow-lg rounded-md border-[2px] bg-white ${
     isDragging || isClicked
       ? "bg-green-200 border-green-300"
@@ -58,27 +98,26 @@ const BaseNode = (props) => {
       onMouseLeave={handleInteractionEnd}
     >
       {/* -------------- Load handles -------------- */}
-      {nodeData.handles &&
-        nodeData.handles.map((handle, index) => (
-          <Handle
-            key={index}
-            type={handle.type}
-            position={handle.position}
-            id={handle.id || undefined}
-            style={{
-              ...handle.style,
-              backgroundColor: isDragging ? "green" : "gray",
-              width: "10px",
-              height: "10px",
-              borderRadius: "50%",
-            }}
-            className={`w-[10px] h-[10px] rounded-[50%] ${
-              isDragging ? "bg-green-500" : "bg-gray-500"
-            }`}
-            onMouseDown={handleEdgeDragStart}
-            onMouseUp={handleEdgeDragEnd}
-          />
-        ))}
+      {handles.map((handle, index) => (
+        <Handle
+          key={index}
+          type={handle.type}
+          position={handle.position}
+          id={handle.id || undefined}
+          style={{
+            ...handle.style,
+            backgroundColor: isDragging ? "green" : "gray",
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+          }}
+          className={`w-[10px] h-[10px] rounded-[50%] ${
+            isDragging ? "bg-green-500" : "bg-gray-500"
+          }`}
+          onMouseDown={handleEdgeDragStart}
+          onMouseUp={handleEdgeDragEnd}
+        />
+      ))}
 
       {/* -------------- Header -------------- */}
       <div className="w-full p-1 flex justify-start items-center gap-1">
@@ -94,6 +133,32 @@ const BaseNode = (props) => {
       <div className="flex items-start flex-col p-1 gap-1">
         {nodeData.fields &&
           nodeData.fields.map((field, index) => {
+            if (nodeData.label === "Text" && field.type === "text") {
+              return (
+                <div key={index} className="flex flex-col w-full">
+                  <label
+                    htmlFor={field.name}
+                    className="text-[8px] text-black/70"
+                  >
+                    {field.label}
+                  </label>
+                  <textarea
+                    id={field.name}
+                    name={field.name}
+                    value={field.value || ""}
+                    className="w-full outline-none text-[10px] border-[1px] border-gray-300 rounded-md p-1 resize-none overflow-hidden"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleInteractionStart();
+                    }}
+                    onBlur={handleInteractionEnd}
+                    onFocus={handleInteractionStart}
+                    onChange={handleTextChange}
+                    style={{ minHeight: "20px" }}
+                  />
+                </div>
+              );
+            }
             switch (field.type) {
               case "text":
                 return (
@@ -108,7 +173,7 @@ const BaseNode = (props) => {
                       type="text"
                       id={field.name}
                       name={field.name}
-                      value={field.value}
+                      value={field.value || ""}
                       className="w-full outline-none text-[10px] border-[1px] border-gray-300 rounded-md p-1"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -116,6 +181,14 @@ const BaseNode = (props) => {
                       }}
                       onBlur={handleInteractionEnd}
                       onFocus={handleInteractionStart}
+                      onChange={(e) => {
+                        const updatedFields = nodeData.fields.map((f) =>
+                          f.name === field.name
+                            ? { ...f, value: e.target.value }
+                            : f
+                        );
+                        setNodeData({ ...nodeData, fields: updatedFields });
+                      }}
                     />
                   </div>
                 );
@@ -138,6 +211,15 @@ const BaseNode = (props) => {
                       }}
                       onBlur={handleInteractionEnd}
                       onFocus={handleInteractionStart}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const updatedFields = nodeData.fields.map((f) =>
+                          f.name === field.name
+                            ? { ...f, value: e.target.value }
+                            : f
+                        );
+                        setNodeData({ ...nodeData, fields: updatedFields });
+                      }}
                     >
                       {field.options.map((option, idx) => (
                         <option key={idx} value={option}>

@@ -62,67 +62,6 @@ export const nodesConfig = {
     icon: IoDocumentTextOutline,
     handles: [{ type: "source", position: "right" }],
     fields: [{ type: "text", label: "Text", name: "text" }],
-  },
-  database: {
-    label: "Database",
-    icon: FaDatabase,
-    handles: [
-      { type: "target", position: "left" },
-      { type: "source", position: "right" },
-    ],
-    fields: [
-      { type: "text", label: "Database Name", name: "dbName" },
-      { type: "text", label: "Query", name: "query" },
-    ],
-  },
-  analytics: {
-    label: "Analytics",
-    icon: IoAnalyticsOutline,
-    handles: [
-      { type: "target", position: "left" },
-      { type: "source", position: "right" },
-    ],
-    fields: [
-      { type: "text", label: "Metric", name: "metric" },
-      {
-        type: "select",
-        label: "Time Frame",
-        name: "timeFrame",
-        options: ["daily", "weekly", "monthly"],
-      },
-    ],
-  },
-  settings: {
-    label: "Settings",
-    icon: MdSettings,
-    handles: [{ type: "target", position: "left" }],
-    fields: [
-      { type: "text", label: "Setting Name", name: "settingName" },
-      { type: "text", label: "Value", name: "value" },
-    ],
-  },
-  chatbot: {
-    label: "Chatbot",
-    icon: BsFillChatSquareDotsFill,
-    handles: [
-      { type: "target", position: "left" },
-      { type: "source", position: "right" },
-    ],
-    fields: [
-      { type: "text", label: "User Input", name: "userInput" },
-      { type: "text", label: "Bot Response", name: "botResponse" },
-    ],
-  },
-  aiModel: {
-    label: "AI Model",
-    icon: GiArtificialIntelligence,
-    handles: [
-      { type: "target", position: "left" },
-      { type: "source", position: "right" },
-    ],
-    fields: [
-      { type: "text", label: "Model Name", name: "modelName" },
-      { type: "text", label: "Parameters", name: "parameters" },
-    ],
+    value: "{{test}}",
   },
 };
